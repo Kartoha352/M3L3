@@ -41,6 +41,12 @@ class DB_Manager:
         with conn:
             conn.executemany(sql, data)
             conn.commit()
+
+    def __execute(self, sql):
+        conn = sqlite3.connect(self.database)
+        with conn:
+            conn.execute(sql)
+            conn.commit()
     
     def __select_data(self, sql, data = tuple()):
         conn = sqlite3.connect(self.database)
@@ -107,7 +113,7 @@ WHERE project_name = ?''', data = (project_name,) )
         sql = """
 SELECT project_name, description, url, status_name FROM projects 
 JOIN status ON
-status.status_id = projects.status_id)
+status.status_id = projects.status_id
 WHERE project_name=? AND user_id=?
 """
         return self.__select_data(sql=sql, data = (project_name, user_id))
@@ -129,12 +135,15 @@ WHERE project_name=? AND user_id=?
             WHERE skill_id = ? AND project_id = ? """
         self.__executemany(sql, [(skill_id, project_id)])
 
+    def add_column_into_table(self, table_name, new_column_name, new_column_type):
+        sql = f"ALTER TABLE {table_name} ADD COLUMN {new_column_name} {new_column_type}"
+        self.__execute(sql)
+
+
 
 if __name__ == '__main__':
     manager = DB_Manager(DATABASE)
 #    manager.create_tables()
 #    manager.default_insert()
-#    manager.insert_project([(1, "Pokemon", "nema", 1), (2, "Digimon", "none", 2)])
-#    manager.insert_skill(1, "Pokemon", 'Telegram')
-    manager.update_projects("user_id",[(2,"Pokemon", 1,)])
-    
+#    manager.insert_project([(1, "Бот-портфолио", "https://github.com/Kartoha352/M3L3/", 2)])
+    manager.add_column_into_table("projects", "project_image", "url")
