@@ -143,7 +143,7 @@ WHERE project_name=? AND user_id=?
 
 if __name__ == '__main__':
     manager = DB_Manager(DATABASE)
-#    manager.create_tables()
-#    manager.default_insert()
+    manager.create_tables()
+    manager.default_insert()
 #    manager.insert_project([(1, "Бот-портфолио", "https://github.com/Kartoha352/M3L3/", 2)])
-    manager.add_column_into_table("projects", "project_image", "url")
+    # manager.add_column_into_table("projects", "project_image", "url")
