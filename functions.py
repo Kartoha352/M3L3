@@ -17,12 +17,17 @@ def no_projects(bot, message):
     bot.send_message(message.chat.id, 'У тебя пока нет проектов!\nМожешь добавить их с помошью команды /new_project')
 
 # Функция для генерации инлайн-клавиатуры
-def gen_inline_markup(rows):
+def gen_inline_markup(rows, data = None):
     markup = InlineKeyboardMarkup()
     markup.row_width = 1
-    for row in rows:
-        markup.add(InlineKeyboardButton(row, callback_data=row))
+    if data == None:
+        for row in rows:
+            markup.add(InlineKeyboardButton(row, callback_data=row))
+    else:
+        for row, i in zip(rows, data):
+            markup.add(InlineKeyboardButton(row, callback_data=i))
     return markup
+
 
 # Функция для генерации обычной клавиатуры
 def gen_markup(rows):
@@ -34,7 +39,7 @@ def gen_markup(rows):
     return markup
 
 # Словарь с атрибутами проектов и соответствующими текстами
-attributes_of_projects = {'Имя проекта' : ["Введите новое имя проекта", "project_name"],
+attributes_of_projects = {'Название проекта' : ["Введите новое название проекта", "project_name"],
                           "Описание" : ["Введите новое описание проекта", "description"],
                           "Ссылка" : ["Введите новую ссылку на проект", "url"],
                           "Статус" : ["Выберите новый статус задачи", "status_id"]}
@@ -45,12 +50,7 @@ def info_project(message, user_id, project_name, bot):
     skills = manager.get_project_skills(project_name)
     if not skills:
         skills = 'Навыки пока не добавлены'
-    bot.send_message(message.chat.id, f"""Project name: {info[0]}
-Description: {info[1]}
-Link: {info[2]}
-Status: {info[3]}
-Skills: {skills}
-""")
+    bot.send_message(message.chat.id, f"Название проекта: *{info[0]}*\nОписание: *{info[1]}*\nСсылка: *{info[2]}*\nТекущий статус: *{info[3]}*\nСкиллы: *{skills}*",reply_markup=gen_inline_markup(["Удалить"],["Удалить|"+str(message.message_id)]), parse_mode="Markdown")
     
 # Функция для выбора проекта для обновления
 def update_project_step_2(message, projects, bot):
@@ -114,7 +114,7 @@ def delete_project(message, projects, bot):
         return
     project_id = manager.get_project_id(project, user_id)
     manager.delete_project(user_id, project_id)
-    bot.send_message(message.chat.id, f'Проект {project} удален!')
+    bot.send_message(message.chat.id, f'Проект *{project}* удален!', parse_mode="Markdown")
 
 # Функция для выбора проекта, к которому нужно добавить навык
 def skill_project(message, projects, bot):
@@ -151,14 +151,14 @@ def name_project(message, bot):
     name = message.text
     user_id = message.from_user.id
     data = [user_id, name]
-    bot.send_message(message.chat.id, "Введите ссылку на проект")
+    bot.send_message(message.chat.id, f"Название проекта: *{data[1]}*\nВведите ссылку на проект: ",parse_mode='Markdown')
     bot.register_next_step_handler(message, link_project, data=data, bot=bot)
 
 # Функция для ввода ссылки на проект
 def link_project(message, data, bot):
     data.append(message.text)
     statuses = [x[0] for x in manager.get_statuses()]
-    bot.send_message(message.chat.id, "Введите текущий статус проекта", reply_markup=gen_markup(statuses))
+    bot.send_message(message.chat.id, f"Название проекта: *{data[1]}*\nCсылка на проект: *{data[2]}*\nВведите текущий статус проекта: ", reply_markup=gen_markup(statuses),parse_mode='Markdown')
     bot.register_next_step_handler(message, callback_project, data=data, statuses=statuses, bot=bot)
 
 # Функция для завершения добавления проекта
@@ -174,4 +174,4 @@ def callback_project(message, data, statuses, bot):
     status_id = manager.get_status_id(status)
     data.append(status_id)
     manager.insert_project([tuple(data)])
-    bot.send_message(message.chat.id, "Проект сохранен")
+    bot.send_message(message.chat.id, f"\nНазвание проекта: *{data[1]}*\nCсылка на проект: *{data[2]}*\nТекущий статус проекта: *{status}*\n\nПроект сохранен!",parse_mode='Markdown')

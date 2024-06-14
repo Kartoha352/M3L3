@@ -28,7 +28,7 @@ def info(message):
 /skills - используй для привязки навыков к проекту
 /delete - используй для удаления проекта
 
-Также ты можешь ввести имя проекта и узнать информацию о нем!""")
+Также ты можешь ввести название проекта и узнать информацию о нем!""")
     
 
 @bot.message_handler(commands=['new_project'])
@@ -54,15 +54,31 @@ def get_projects(message):
     user_id = message.from_user.id
     projects = manager.get_projects(user_id)
     if projects:
-        text = "\n".join([f"Project name:{x[2]} \nLink:{x[4]}\n" for x in projects])
-        bot.send_message(message.chat.id, text, reply_markup=gen_inline_markup([x[2] for x in projects]))
+        text = "\n".join([f"Название проекта: *{x[2]}*\nСсылка: *{x[4]}*\n" for x in projects])
+        bot.send_message(message.chat.id, text, reply_markup=gen_inline_markup([x[2] for x in projects]), parse_mode="Markdown")
     else:
-        no_projects(message)
+        no_projects(bot, message)
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
-    project_name = call.data
-    info_project(call.message, call.from_user.id, project_name, bot)
+    if "Удалить|" not in call.data:
+        project_name = call.data
+        info_project(call.message, call.from_user.id, project_name, bot)
+    else:
+        user_id = call.from_user.id
+        project_name = call.message.text.split("\n")[0].split(": ")[1]
+        project_id = manager.get_project_id(project_name, user_id)
+        manager.delete_project(user_id, project_id)
+        
+        bot.send_message(call.message.chat.id, f"Проект *{project_name}* удалён!", parse_mode="Markdown")
+        bot.delete_message(call.message.chat.id, call.message.message_id)
+
+        projects = manager.get_projects(user_id)
+        if projects:
+            text = "\n".join([f"Название проекта: *{x[2]}*\nСсылка: *{x[4]}*\n" for x in projects])
+        else:
+            text = 'У тебя пока нет проектов!\nМожешь добавить их с помошью команды /new_project'
+        bot.edit_message_text(text,call.message.chat.id, message_id=int(call.data.split("|")[1]), reply_markup=gen_inline_markup([x[2] for x in projects]), parse_mode="Markdown")
 
 
 @bot.message_handler(commands=['delete'])
@@ -70,12 +86,12 @@ def delete_handler(message):
     user_id = message.from_user.id
     projects = manager.get_projects(user_id)
     if projects:
-        text = "\n".join([f"Project name:{x[2]} \nLink:{x[4]}\n" for x in projects])
+        text = "\n".join([f"Название проекта: *{x[2]}*\nСсылка: *{x[4]}*\n" for x in projects])
         projects = [x[2] for x in projects]
-        bot.send_message(message.chat.id, text, reply_markup=gen_markup(projects))
+        bot.send_message(message.chat.id, text, reply_markup=gen_markup(projects), parse_mode="Markdown")
         bot.register_next_step_handler(message, delete_project, projects=projects, bot=bot)
     else:
-        no_projects(message)
+        no_projects(bot, message)
 
 @bot.message_handler(commands=['update_projects'])
 def update_project(message):
@@ -86,7 +102,7 @@ def update_project(message):
         bot.send_message(message.chat.id, "Выбери проект, который хочешь изменить", reply_markup=gen_markup(projects))
         bot.register_next_step_handler(message, update_project_step_2, projects=projects, bot=bot)
     else:
-        no_projects(message)
+        no_projects(bot, message)
 
 
 @bot.message_handler(func=lambda message: True)
