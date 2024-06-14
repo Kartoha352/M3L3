@@ -1,2 +1,0 @@
-TOKEN = "2124526795:AAEHfk1NeCd0h3b7iSyIvsSmMa1lhd_IPJU"
-DATABASE = "projects.db"
